@@ -2,7 +2,7 @@
 
 ![](images/bobbytables.png)
 
-Credit: unknown
+Credit: [xkcd](https://xkcd.com/327/)
 
 > *TL;DR: Data can be stored in different ways. Understanding different types of databases and the underlying data models is crucial for both storing and reading data.*
 
@@ -18,7 +18,7 @@ Formal discussions of information might start with the discussion of **informati
 
 ### Information retrieval models
 
-Information retrieval then goes a step further and also provides theoretical models for retrieving information, as, for instance, [Modern Information Retrieval](https://isbnsearch.org/isbn/9780321416919):
+Information retrieval then goes a step further and also provides theoretical models for retrieving information, as, for instance, we read in [Modern Information Retrieval](https://isbnsearch.org/isbn/9780321416919):
 
 > Modeling in IR is a complex process aimed at producing a ranking function, i.e., a function that assigns scores to documents with regard to a given query. This process consists of two main tasks: (a) the conception of a logical framework for representing documents and queries and (b) the definition of a ranking function that computes a rank for each document with regard to a given query.
 
@@ -33,9 +33,13 @@ Instead, from our practical perspective it makes more sense to open up the discu
 
 ## Databases
 
-[Wikipedia](https://en.wikipedia.org/wiki/Database) defines a database as a "an organized collection of data, generally stored and accessed electronically from a computer system". Such a broad definition allows for many different kinds of databases, ranging from a single text file (e.g. the line `apples,oranges,grapes` is a database!) to complex database management systems (DBMS) like [MySQL](https://en.wikipedia.org/wiki/MySQL) that operate on large data structures.
+[Wikipedia](https://en.wikipedia.org/wiki/Database) defines a database as a "an organized collection of data, generally stored and accessed electronically from a computer system". Such a broad definition allows for many different kinds of databases, ranging from a single line of text (e.g. `apples,oranges,grapes` is a database!) to complex database management systems (DBMS) that operate on large data structures.
 
-The classification of databases is a topic for a course on its own. For now, it will suffice to say that the development of database technology can be divided into three eras based on data model or structure: navigational, relational/SQL, and post-relational.
+The classification of databases is a topic for a course on its own. For now, it will suffice to say that the development of database technology can be divided into three eras based on data model or structure: 
+
+1. navigational
+2. relational
+3. post-relational
 
 ### Navigational
 
@@ -55,8 +59,10 @@ import csv
 import os
 
 headers = ["identifier", "last_name", "first_name"]
-rows = [["id1", "Deneire", "Tom"],
-        ["id2", "Doe", "Jane"]]
+rows = [
+            ["1", "Deneire", "Tom"],
+            ["2", "Doe", "Jane"]
+        ]
 
 FILENAME = "mycsvfile.csv"
 
@@ -80,9 +86,9 @@ with open(FILENAME, 'r') as csvfile:
 
 # test
 result = {"headers":
-          {"test": data[0], "original": headers},
+            {"test": data[0], "original": headers},
           "rows":
-          {"test": data[1:], "original": rows}
+            {"test": data[1:], "original": rows}
           }
 for item in ["headers", "rows"]:
     try:
@@ -97,21 +103,51 @@ os.remove(FILENAME)
 
 [Wikipedia:Relational_model](https://en.wikipedia.org/wiki/Relational_model) and [Wikipedia:Database](https://en.wikipedia.org/wiki/Database) say:
 
->The relational model (...) is an approach to managing data using a structure and language consistent with first-order predicate logic, first described in 1969 by English computer scientist Edgar F. Codd, where all **data is represented in terms of tuples, grouped into relations**. (...) he described a new system for storing and working with large databases. Instead of records being stored in some sort of linked list of free-form records (...), Codd's idea was to organise the data as a number of "tables", each table being used for a different type of entity. Each table would contain a fixed number of columns containing the attributes of the entity. One or more columns of each table were designated as a primary key by which the rows of the table could be uniquely identified; cross-references between tables always used these primary keys, rather than disk addresses, and queries would join tables based on these key relationships, using a set of operations based on the mathematical system of relational calculus (from which the model takes its name). Splitting the data into a set of normalized tables (or relations) aimed to ensure that each "fact" was only stored once, thus simplifying update operations. Virtual tables called views could present the data in different ways for different users, but views could not be directly updated.
+>The relational model (...) is an approach to managing data using a structure and language consistent with first-order predicate logic, first described in 1969 by English computer scientist Edgar F. Codd, where all **data is represented in terms of tuples, grouped into relations**. (...) he described a new system for storing and working with large databases. Instead of records being stored in some sort of linked list of free-form records (...), Codd's idea was to organise the **data as a number of "tables"**, each table being used for a different type of entity. Each table would contain a fixed number of columns containing the attributes of the entity. One or more columns of each table were designated as a primary key by which the rows of the table could be uniquely identified; cross-references between tables always used these primary keys, rather than disk addresses, and queries would join tables based on these key relationships, using a set of operations based on the mathematical system of relational calculus (from which the model takes its name). Splitting the data into a set of normalized tables (or relations) aimed to ensure that each "fact" was only stored once, thus simplifying update operations. Virtual tables called views could present the data in different ways for different users, but views could not be directly updated.
 
->The purpose of the relational model is to provide a declarative method for specifying data and queries: users directly state what information the database contains and what information they want from it, and let the database management system software take care of describing data structures for storing the data and retrieval procedures for answering queries.
+>The purpose of the relational model is to provide a **declarative method** for specifying data and queries: users directly state what information the database contains and what information they want from it, and let the database management system software take care of describing data structures for storing the data and retrieval procedures for answering queries.
 
->Most relational databases use the SQL data definition and query language.
+>Most relational databases use the **SQL** data definition and query language.
 
-A relational database conceptualizes **data as a collection of tables**. We will look into relational databases and SQL in [chapter 5](https://tomdeneire.github.io/InformationScience/chapter05.html).
+Simply said, a relational database is a **collection of tables** that share a common data element. Have a look at this simplified example of a library catalogue:
+
+**Table 1: titles**
+| LOI        | title                   | language |
+| ---------- | ----------------------- | -------- |
+| c:1        | The origin of species   | eng      |
+| c:2        | History of Middle Earth | eng      |
+
+**Table 2: authors**
+| LOI        | name                    | function |
+| ---------- | ----------------------- | -------  |
+| c:1        | Darwin, Charles         | aut      |
+| c:2        | Tolkien, J.R.R.         | aut      |
+| c:2        | Tolkien, Christopher    | edt      |
+
+**Table 3: subjects**
+| LOI        | subject               |
+| ---------- | --------------------- |
+| c:1        | evolutionary biology  |
+| c:1        | theology              |
+| c:1        | history of science    |
+| c:2        | fantasy               |
+| c:2        | constructed languages |
+
+Now imagine what would happen if we were to convert these three tables to one spreadsheet:
+
+```
+LOI, title, language, name1, name2, function, subject1, subject2, subject3
+```
+
+And imagine scaling this up: books might easily have five authors and ten subjects, and we have only a little bit of metadata here. What about imprints, editions, carries, holdings, and so on? The advantages of relational databases are clear: they are perfect for storing and querying large amounts of related information in a flexible, decoupled way.
 
 ### Post-relational
 
 [Wikipedia](https://en.wikipedia.org/wiki/NoSQL) says:
 
->A NoSQL (originally referring to "non-SQL" or "non-relational") database provides a mechanism for storage and retrieval of data that is modeled in **means other than the tabular relations used in relational databases**. Such databases have existed since the late 1960s, but the name "NoSQL" was only coined in the early 21st century (...) NoSQL databases are increasingly used in big data and real-time web applications. NoSQL systems are also sometimes called "Not only SQL" to emphasize that they may support SQL-like query languages or sit alongside SQL databases (...).
+>A NoSQL (originally referring to "non-SQL" or "non-relational") database provides a mechanism for storage and retrieval of data that is modeled in **means other than the tabular relations used in relational databases**. Such databases have existed since the late 1960s, but the name "NoSQL" was only coined in the early 21st century (...) NoSQL databases are increasingly used in big data and real-time web applications. NoSQL systems are also sometimes called **"not only SQL"** to emphasize that they may support SQL-like query languages or sit alongside SQL databases (...).
 
->The data structures used by NoSQL databases (e.g. key–value pair, wide column, graph, or document) are different from those used by default in relational databases, making some operations faster in NoSQL. The particular suitability of a given NoSQL database depends on the problem it must solve. Sometimes the data structures used by NoSQL databases are also viewed as "more flexible" than relational database tables.
+>The data structures used by NoSQL databases (e.g. key–value pair, wide column, graph, or document) are different from those used by default in relational databases, making some operations faster in NoSQL. The particular suitability of a given NoSQL database depends on the problem it must solve. Sometimes the data structures used by NoSQL databases are also viewed as **more flexible** than relational database tables.
 
 Categories of post-relational databases include:
 
@@ -139,6 +175,8 @@ For instance, how would you translate this JSON (postrelational) to a spreadshee
 }
 ```
 
+### Hierarchies
+
 #### JSON
 
 In case you are not familiar with [JSON](https://www.json.org/json-en.html), [w3schools](https://www.w3schools.com/js/js_json_intro.asp) is a good starting point. 
@@ -162,9 +200,9 @@ python_dict["initials"] = ["T", "B"]
 print(python_dict)
 print(type(python_dict))
 
-In fact, Python allows you to access JSON just like a database, using the `json` library to either turn JSON into an object (often a dict) (`loads()` ) or to turn an object into JSON (`dumps()`):
+In fact, Python allows you to access JSON just like a database, using the `json` library to either turn JSON into an object (often a dict) with the function `loads()` or to turn an object into JSON with `dumps()`:
 
-from json import loads, dumps
+import json
 contacts = """
 {
 	"1": {
@@ -178,12 +216,12 @@ contacts = """
 }
 """
 # Turn JSON into dict() with loads()
-contacts_dict = loads(contacts)
+contacts_dict = json.loads(contacts)
 print(contacts_dict["2"]["lastname"])
 
 # Turn dict() into JSON with dumps()
 contacts_dict["2"]["lastname"] = "Eyre"
-contacts = dumps(contacts_dict)
+contacts = json.dumps(contacts_dict)
 print(contacts)
 
 #### XML
@@ -199,7 +237,9 @@ Here we will briefly discuss reading, parsing (the process of analyzing XML docu
 
 #### Install lxml
 
-Depending on your OS and programming environment, you might first need to install lxml. For more instructions on this, visit the [documentation](https://lxml.de/installation.html).
+Depending on your OS and programming environment, you might first need to install lxml. You can easily verify this by executing `import lxml`. If the module is not present, Python will throw a `ModuleNotFoundError`.
+
+For more instructions on this, visit the [lxml](https://lxml.de/installation.html) or [Anaconda](https://anaconda.org/anaconda/lxml) documentation.
 
 #### Reading XML
 
@@ -217,36 +257,39 @@ xml_string = b'''
     </record>
 </database>
 '''
-# turn the XML string into an `etree` object
+# Turn the XML bytes-string into an `etree` object
 tree = lxml.etree.fromstring(xml_string, parser=None)
 print(tree)
-# show the methods that this object allows
+# Show the methods that this object allows
 print(dir(tree))
 
 #### Parsing XML
 
-# iterate over the "record" elements
+# Iterate over the "record" elements
 for element in tree.iter("record"):
     print(element)
 
-# iterate over the "name" elements
+# Iterate over the "name" elements
 for element in tree.iter("name"):
     print(element)
 
-# access the "name" elements
+# Access the "name" elements
 for element in tree.iter("name"):
     # XML attributes are dicts
     for attribute_name, attribute_value in element.items():
         print(attribute_name, ":", attribute_value)
-        # get text with .text method of element object
+        # Get text with .text method of element object
         print(element.text)
 
 #### Writing XML
 
 # Constructing the aforementioned XML string
 
+import lxml.etree
+
 root = lxml.etree.Element("database")
 
+# Create subelements with SubElement(parent, tag, attribute)
 record1 = lxml.etree.SubElement(root, "record", nr="1")
 name1 = lxml.etree.SubElement(record1, "name", type="last")
 name1.text = "Deneire"
@@ -261,21 +304,21 @@ name4.text = "John"
 
 print(lxml.etree.tostring(root))
 
+### Graphs
+
 #### RDF
 
-Unfortunately, we do not have time to discuss RDF and Linked Data in detail. However, it is important to realize that RDF is a data model, not a data serialization model, such as XML or JSON - in fact, both can be used to express RDF data.
+Unfortunately, we do not have time to discuss RDF and Linked Data in detail. However, it is important to realize that RDF is a **data model, not a data serialization model**, such as XML or JSON - in fact, both can be used to express RDF data.
 
 A quick summary from [Wikipedia](https://en.wikipedia.org/wiki/Resource_Description_Framework):
 
 >The RDF data model is similar to classical conceptual modeling approaches (such as entity–relationship or class diagrams). It is based on the idea of making statements about resources (in particular web resources) in expressions of the form **subject–predicate–object, known as triples**. The subject denotes the resource, and the predicate denotes traits or aspects of the resource, and expresses a relationship between the subject and the object.
 >
->For example, one way to represent the notion "The sky has the color blue" in RDF is as the triple: a subject denoting "the sky", a predicate denoting "has the color", and an object denoting "blue". Therefore, RDF uses subject instead of object (or entity) in contrast to the typical approach of an entity–attribute–value model in object-oriented design: entity (sky), attribute (color), and value (blue).
+>For example, one way to represent the notion "The sky has the color blue" in RDF is as the triple: a **subject** denoting "the sky", a **predicate** denoting "has the color", and an **object** denoting "blue". 
 >
 >RDF is an abstract model with several serialization formats (i.e. file formats), so the particular encoding for resources or triples varies from format to format.
 
-A core concept of the triplestore and the underlying Linked Data principle is the **Uniform Resource Identifier (URI)**, a unique and unambiguous identifier for all things linked. Optimally linked data uses URIs for all three elements of the triple, subject, predicate and verb. 
-
-To illustrate how this works, let's look at the part of the RDF/XML for the Wikidata entry [Paris](https://www.wikidata.org/wiki/Q90), known as entity `Q90`:
+In order to define the data used in RDF we use a **Uniform Resource Identifier (URI)**, a unique and unambiguous identifier for all things described in the triplestore. To illustrate how this works, let's look at the part of the RDF/XML for the Wikidata entry [Paris](https://www.wikidata.org/wiki/Q90), known as entity `Q90`:
 
 ```xml
 <?xml version="1.0"?>
@@ -284,7 +327,19 @@ To illustrate how this works, let's look at the part of the RDF/XML for the Wiki
     </rdf:Description>
 ```
 
-This is a triple expressing the fact that "Paris" (subject) "is the capital of" (predicate) "France" (object). To express this three URIs are used: `Q90` (Paris), `P1376` (property "is capital of") and `Q142` (France). The makes the statement unique, uniform, unambiguous (telling a computer that Paris the city, not Paris Hilton (Q47899) is the capital of France), and linked: all elements of the triple are linked up to other data, e.g. `Q142` which was the object in this statement, will be the subject of others.
+This is a triple expressing the fact that:
+
+1. "Paris" (subject) 
+2. "is the capital of" (predicate) 
+3. "France" (object)
+
+To express this three URIs are used: 
+
+1. `Q90` (Paris)
+2. `P1376` (property "is capital of") 
+3. `Q142` (France)
+
+Theismakes the statement unique, uniform, unambiguous (telling a computer that Paris the city, not Paris Hilton (Q47899) is the capital of France), and also **Linked Data**: all elements of the triple are linked up to other data, e.g. `Q142` which was the object in this statement, will be the subject of others.
 
 Consider the difference with non-RDF XML where resources are not identified with URIs and data is not linked and the model not open:
 
@@ -299,7 +354,7 @@ RDF and especially Linked Open Data are undoubtedly part of the future for infor
 
 ### Data(bases) as Linked Data
 
-Another interesting way to think about database models is to consider the different types on the [Linked Data](https://www.w3.org/2011/gld/wiki/5_Star_Linked_Data) scale:
+The characterization of databases can also be considered not so much from a technical standpoint, but rather as a gradual evolution on the [Linked Data](https://www.w3.org/2011/gld/wiki/5_Star_Linked_Data) scale:
 
 >Tim Berners-Lee, the inventor of the Web and initiator of the Linked Data project, suggested a 5 star deployment scheme for Linked Data. The 5 Star Linked Data system is cumulative. Each additional star presumes the data meets the criteria of the previous step(s).
 
@@ -307,9 +362,9 @@ Another interesting way to think about database models is to consider the differ
 
 >☆☆ Available as machine-readable structured data, (e.g., not a scanned image).
 
->☆☆☆ Available in a non-proprietary format, (e.g, CSV, not Microsoft Excel).	
+>☆☆☆ Available in a non-proprietary format, (e.g, CSV, not Microsoft Excel).
 
->☆☆☆☆ Published using open standards from the W3C (RDF and SPARQL).	
+>☆☆☆☆ Published using open standards from the W3C (RDF and SPARQL).
 
 >☆☆☆☆☆ All of the above and links to other Linked Open Data.
 
@@ -323,4 +378,4 @@ In this way, we can organize different database types into a data hierarchy like
 * URI: Uniform Resource Identifier
 * LD: Linked Data
 
-For a good description of this summary, see [this article](https://www.ontotext.com/knowledgehub/fundamentals/five-star-linked-open-data/).
+If you want to know more about this, [this article](https://www.ontotext.com/knowledgehub/fundamentals/five-star-linked-open-data/) offers a good explanation.

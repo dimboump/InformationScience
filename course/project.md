@@ -2,104 +2,110 @@
 
 ![](images/project.jpeg)
 
+Credit: unknown
+
 This document describes the exam project for the course "Information Science" for the UAntwerp Master of Linguistics (from 2021-2022 onwards: "Master of Digital Text Analysis").
 
-## Task
+## Description
 
-**Use the DBpedia lookup API to build a public access catalogue for the Great Books.**
+This year's project can be described as an **STCV - HPB data reconciliator**. The idea is to write a piece of software that tries to pair up STCV (Short Title Catalogue Flanders) records with their HPB (Heritage of the Printed Book Database) matches.
 
-Note: determine `{prefix}` like so:
+For instance:
 
-```python
-import urllib.request
-import urllib.response
+[c:stcv:12854444](https://anet.be/record/stcvopac/c:stcv:12854444/E) matches [FR-751131015.CG.FRBNF363412140000008](http://hpb.cerl.org/record/FR-751131015.CG.FRBNF363412140000008)
 
+## Metadata
 
-def getAPIprefix() -> str:
-    """
-    Detect functioning DBpedia lookup API
-    see https://forum.dbpedia.org/t/dbpedia-lookup-api/872
-    """
-    prefixes = ["https://lookup.dbpedia.org/api/search/PrefixSearch?QueryString=",
-                "http://lookup.dbpedia.org/api/search/PrefixSearch?QueryString=",
-                "https://lookup.dbpedia.org/api/prefix?query=",
-                "http://lookup.dbpedia.org/api/prefix?query=",
-                "http://akswnc7.informatik.uni-leipzig.de/lookup/api/search?query="]
-    for prefix in prefixes:
-        with urllib.request.urlopen(prefix + "Antwerp") as test:
-            if test.status == 200:
-                return prefix
-    sys.exit("No functioning DBpedia lookup API found!")
+This can be implemented using **HPB's SRU/CQL service**, see [https://sru.gbv.de/hpb?version=2.0&operation=explain](https://sru.gbv.de/hpb?version=2.0&operation=explain)
 
+HPB offers metadata in several formats, including MARC, Dublin Core, ... See, for instance, [https://sru.gbv.de/hpb?version=2.0&operation=searchRetrieve&query=lipsius&startRecord=1&maximumRecords=10&recordSchema=dc](https://sru.gbv.de/hpb?version=2.0&operation=searchRetrieve&query=lipsius&startRecord=1&maximumRecords=10&recordSchema=dc)
 
-DBPEDIA_PREFIX = getAPIprefix()
+How you query HPB and which metadata you use, is completely up to you.
+
+For the STCV dataset you will be using a sample from the **SQLite STCV export** that is in the [course repository](https://github.com/TomDeneire/InformationScience/tree/main/course/data). This sample is defined as the following SQL query. This selects 100 single-volume titles (multivolume titles pose specific reconciliation problems) with all relevant metadata you will need.
+
+``` python
+QUERY = """
+SELECT DISTINCT
+    title.cloi as identifier,
+    COUNT(title.cloi) as id_count,
+    author_vw as author_standardized,
+    author_zvwr as author_original,
+    author_zbd as author_dates,
+    corporateauthor_nm as corporateauthor_standardized,
+    corporateauthor_zvwr as corporateauthor_original,
+    title_ti as title_title,
+    title_lg as title_language,
+    collation_fm as format,
+    collation_ka as quires,
+    collation_pg as pages,
+    edition_ed as edition_info,
+    impressum_ju1sv as year1,
+    impressum_ju1ty as year1_type,
+    impressum_ju2sv as year2,
+    impressum_ju2ty as year2_type,
+    impressum_pl as place,
+    impressum_ug as printer,
+    language_lg as language_info,
+    number_nr as fingerprint
+    FROM title
+LEFT JOIN author on author.cloi = title.cloi
+LEFT JOIN collation on collation.cloi = title.cloi
+LEFT JOIN corporateauthor on corporateauthor.cloi = title.cloi
+LEFT JOIN edition on edition.cloi = title.cloi
+LEFT JOIN impressum on impressum.cloi = title.cloi
+LEFT JOIN language on language.cloi = title.cloi
+LEFT JOIN number on number.cloi = title.cloi
+GROUP BY identifier
+HAVING ID_COUNT=2
+LIMIT 100
+"""
 ```
 
-This task contains (at least) the following components:
+## Technical specification
 
-- Build a Jupyter Notebook that accepts user input of a book title, such as "To Kill a Mockingbird", "The Origin of Species", ...
+The goal of the project is to write a Jupyter Notebook that looks for `stcv.sqlite` in the same directory as the notebook itself and produces an onscreen output of the potential matches in the form of STCV identifier (`c:stcv:*`) = HPB identifier.
 
-- Make a call to the [DBpedia lookup API](https://github.com/dbpedia/lookup). (Don't be surprised if the API sometimes returns incomplete information, it is not the most recent lookup API. The most recent one uses SPARQL queries though).
+Just to be clear, the HPB identifier is the piece of data found in MARCXML field `035a`, e.g.:
 
-- The API response, see e.g. `{prefix}mockingbird`, will be XML which refers to the ontology of each result. For books look for `http://dbpedia.org/ontology/Book`
+``` xml
+<datafield tag="035" ind1=" " ind2=" ">
+<subfield code="a">IT-ICCU.TSAE008822</subfield>
+</datafield>
+```
 
-- Parse the XML response and extract the result you need. If there are several, allow the user to pick a choice before you continue to the resource itself, e.g. `http://dbpedia.org/resource/To_Kill_a_Mockingbird`
+You may choose to add additional information to the result, if you think it is relevant for the specific data reconciliation.
 
-- The resource itself can be rendered in different formats, but JSON is the easiest to work with, e.g. `http://dbpedia.org/data/To_Kill_a_Mockingbird.json` (notice the structural differences in the URL!). Parse this JSON and extract the metadata you need.
+One STCV record may also have several HPB matches. Moreover, you may notice that some HPB records explicitely link to STCV, e.g. [http://hpb.cerl.org/record/BE-AnVE.c:stcv:12922627](http://hpb.cerl.org/record/BE-AnVE.c:stcv:12922627)? However, not all relevant HPB records will have such an explicit link. There is no continuous synchronization of HPB and STCV. Your software would be a good step in that direction. In other words, **any HPB id** can be a match for an STCV record, not only those HPB records which already contain an STCV link.
 
-- This RDF-JSON of the resource contains a lot of metadata about the book, but also its author. As this is Linked Data, many metadata elements again refer to other DBpedia resources, e.g. `http://dbpedia.org/resource/Harper_Lee`, which you can use to further enrich your result.
+Please use only the `lxml` module to handle XML.
 
-- Return the relevant results to the Jupyter Notebook environment and display them nicely.
+**Important!** I am not aware of any limitations on the [HPB SRU access](https://www.cerl.org/resources/hpb/technical/modes_of_access_to_the_hpb_database), but nevertheless, please take the following precautions to keep your usage of the service "friendly":
 
+- as this application is not really performance-critical, combine each request with `time.sleep(2)`
+- try to keep your test-volume down, e.g. test with only one record first and/or save the XML response and handle it as a local file
 
-## Requirements
+Please inform me if there are any API issues!
 
+Just to give you an idea: the model solution for this project took me about 4 hours to write and test, and is about 250 lines long (including the query).
 
-### Pass or fail
+Hand in your project by setting up a private GitHub repository that you share with me (username [TomDeneire](https://github.com/TomDeneire)). Please take care to mention your **full name** in the exam notebook!
 
-The following is required to pass the exam:
+## Expectations
 
-- Upload **functional** code to your GitHub repository. If the Notebook doesn't work when I try to run its code, I will try to debug your code, but of course, this drastically reduces your chances to pass this course. I would rather have functional code that does one thing, than code that tries to do ten things but doesn't run.
+### Basic
 
-- Put the code in a new repository, outside of `Information Science`. Push your last update by **Wednesday 20 January 00:01 hours**.
+- As with any exam, this project is strictly personal
+- Please hand in only fully functional code
+- Use only the Python standard library (except for `lxml`)
+- Write clean and legible code
 
-- Add a short ``README.md`` that describes your application, any necessary dependencies (third-party libraries, ...), etcetera. However, please take care to use only the Python standard library and/or the third-party libraries we used in the course itself. This will greatly reduce the chances of your code breaking because of dependency issues.
+### Advanced
 
-- Organize your code by using at least two different modules (e.g. `project.ipynb`, importing something like `dbpedia.py`).
+- Take into account the differences between STCV and HPB metadata / cataloguing standards.
+- Optimize your CQL queries with indices, Booleans, ...
+- Simple queries will yield many results. Complex queries will yield fewer results. How can you find a balance?
 
-- As with any exam, this project is a **personal assignment**. Please do not collaborate with your fellow students (and take care not to publish your code prematurely). I will be able to tell if two codebases are essentially the same.
+## Timing
 
-### Extra credit
-
-The following will give you extra credit:
-
-- The more relevant metadata you can include in your result, the better. Take full advantage of the 'linked' in the DBpedia Linked Data, for instance, by including some information about the author.
-
-- Including code comments such as function docstrings will make your code a lot more readable and easier to follow.
-
-- Displaying the result in the notebook can be done in different ways. Jupyter Notebook offers some nice options here, for instance displaying HTML which can dramatically improve the layout of your results. Proper visual presentation of search results is a vital component of information quality, but there is a limit. After that, layout is only eye-candy, so do not invest too much time in this.
-
-
-### Maxing out
-
-The following will make your project exceptional:
-
-- If you follow the Linked Data path, you will find even more metadata than title or author. You should by no means feel obliged to stick to just the DBpedia environment. Maybe the other Wikimedia projects have something to offer too (Wikidata, Wikimedia Commons). Perhaps there is even the possibilty to return some images with the result?
-
-- Your own creativity is more than welcome!
-
-
-## Tips
-
-- **Start with the basics**: read book input from notebook, make the API call, print the result. Only then try to make that better by adding metadata or improving the layout.
-
-- **Test your application with many examples**, e.g. The Origin of Species", "War and Peace", "Alice in Wonderland", "Silmarillion", etc. Also test it with invalid input: empty strings, characters that are unsafe for URLs, integers, etcetera.
-
-- **Avoid local operations** so the code only runs in Jupyter Notebook. By the way, this will make for a nice online portfolio project!
-
-- **Refactor** every self-contained unit of code to a function or class. Think of your project as a long line of pipes. If you can't see the bigger picture, work from the bottom up: one function at a time. E.g.: a function that takes user input string (e.g. "Ulysses") and returns a DBPedia API URL, or: a function that takes a resource URL and turns that into the matching JSON URL (see above).
-
-
-## Consultation
-
-If you have questions regarding the project architecture, design or implementation (not about actual code problems), you can contact me the following weeks to make an appointment for a short consultation during the week of **11 to 15 January**. However, this is 100% optional.
+The final deadline to upload your code to GitHub is **Sunday 30 January, 23h59**.
